@@ -45,14 +45,21 @@ def run(verbose: bool = True) -> dict:
 
     # --- sustainability snapshot ---
     median_tokens = 800
+    baseline_region = "us-east-1"
     wh = sustainability.wh_per_query(median_tokens)
+    best_region = min(sustainability.REGION_CARBON, key=sustainability.REGION_CARBON.get)
     sust = {
         "wh_per_query": wh,
-        "carbon_g": sustainability.carbon_g(wh, "us-east-1"),
-        "best_region": min(sustainability.REGION_CARBON, key=sustainability.REGION_CARBON.get),
+        "carbon_g": sustainability.carbon_g(wh, baseline_region),
+        "best_region": best_region,
+        "baseline_region": baseline_region,
+        "baseline_energy_cost_usd": sustainability.energy_cost_usd(wh, baseline_region),
+        "best_region_energy_cost_usd": sustainability.energy_cost_usd(wh, best_region),
+        "best_region_carbon_g": sustainability.carbon_g(wh, best_region),
     }
 
-    md = report.build_report(baseline, optimized, levers, sustainability=sust)
+    insights = report.build_insights(r1, r3, levers, sust)
+    md = report.build_report(baseline, optimized, levers, sustainability=sust, insights=insights)
     out_md = os.path.join(ROOT, "outputs", "report.md")
     os.makedirs(os.path.dirname(out_md), exist_ok=True)
     with open(out_md, "w") as f:
